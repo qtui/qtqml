@@ -1,11 +1,16 @@
 package qtqml
 
 import (
+	"runtime"
+
 	"github.com/kitech/gopp"
 	"github.com/kitech/gopp/cgopp"
+	"github.com/qtui/qtclzsz"
 	"github.com/qtui/qtcore"
 	"github.com/qtui/qtrt"
 )
+
+// 想到一种减少go包大小的方式，把方法写成成员变量函数。减少go的符号表
 
 type QQmlContext struct {
 	*qtcore.QObject
@@ -50,6 +55,14 @@ func (me *QQmlEngine) ContextForObject(obj qtcore.QObjectITF) *QQmlContext {
 	return QQmlContextFromptr(rv)
 }
 
+func (me *QQmlEngine) contextForObject(qobj qtcore.QObjectITF) *QQmlContext {
+	return QQmlEngine_contextForObject(qobj)
+}
+func QQmlEngine_contextForObject(qobj qtcore.QObjectITF) *QQmlContext {
+	rv := qtrt.Callany[voidptr](nil, qobj)
+	return QQmlContextFromptr(rv)
+}
+
 type QQmlApplicationEngine struct {
 	*QQmlEngine
 }
@@ -73,4 +86,43 @@ func (me *QQmlApplicationEngine) RootObject() *qtcore.QObject {
 	fnsym := qtrt.GetQtSymAddr(symname)
 	rv := cgopp.FfiCall[voidptr](fnsym, me.GetCthis())
 	return qtcore.QObjectFromptr(rv)
+}
+
+// //////////
+type QQmlProperty struct {
+	*qtrt.CObject
+}
+
+func QQmlPropertyFromptr(ptr voidptr) *QQmlProperty {
+	return &QQmlProperty{qtrt.CObjectFromptr(ptr)}
+}
+
+func (me *QQmlProperty) Dtor()          { qtrt.Callany0(me) }
+func QQmlPropertyDtor(me *QQmlProperty) { me.Dtor() }
+
+// QQmlProperty(obj, QString(name), ctx);
+func NewQQmlProperty(qobj qtcore.QObjectITF, name string, ctx any) *QQmlProperty {
+	rv := qtrt.Callany[voidptr](nil, qobj, name, ctx)
+	return QQmlPropertyFromptr(rv)
+}
+
+func (me *QQmlProperty) PropertyTypeName() string {
+	rv := qtrt.Callany[voidptr](me)
+	return cgopp.GoString(rv)
+}
+
+func (me *QQmlProperty) Write(valx any) bool {
+	qvar := qtcore.NewQVariant(valx)
+	defer qvar.Dtor()
+
+	rv := qtrt.Callany[bool](me, qvar)
+	return rv
+}
+func (me *QQmlProperty) Read() *qtcore.QVariant {
+	rovp := cgopp.Mallocpg(qtclzsz.Get("QVariant"))
+	qtrt.CallanyRov[int](rovp, me)
+
+	qvar := qtcore.QVariantFromptr(rovp)
+	runtime.SetFinalizer(qvar, qtcore.QVariantDtor)
+	return qvar
 }

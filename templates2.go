@@ -1,6 +1,10 @@
 package qtqml
 
-import "github.com/qtui/qtcore"
+import (
+	"github.com/kitech/gopp"
+	"github.com/qtui/qtcore"
+	"github.com/qtui/qtrt"
+)
 
 type QQuickControl struct {
 	*QQuickItem
@@ -70,6 +74,15 @@ type QQuickStackView struct {
 
 type QQuickTextArea struct {
 	*QQuickTextEdit
+}
+
+func QQuickTextAreaFromptr(ptr voidptr) *QQuickTextArea {
+	return &QQuickTextArea{QQuickTextEditFromptr(ptr)}
+}
+
+func NewQQuickTextArea(parent ...QQuickItemITF) *QQuickTextArea {
+	rv := qtrt.Callany[voidptr](nil, gopp.FirstofGv(parent))
+	return QQuickTextAreaFromptr(rv)
 }
 
 type QQuickSwipe struct {

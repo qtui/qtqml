@@ -6,9 +6,46 @@ import (
 	"github.com/qtui/qtrt"
 )
 
+type QQuickApplication struct {
+	*qtcore.QObject
+}
+
+// todo Materail.theme =
+type QQuickApplicationWindow struct {
+	*qtcore.QObject
+}
+
+func QQuickApplicationWindowFromptr(ptr voidptr) *QQuickApplicationWindow {
+	return &QQuickApplicationWindow{qtcore.QObjectFromptr(ptr)}
+}
+
+func (me *QQuickApplicationWindow) ContentItem() *QQuickItem {
+	rv := qtrt.Callany[voidptr](me)
+	return QQuickItemFromptr(rv)
+}
+func (me *QQuickApplicationWindow) Header() *QQuickItem {
+	rv := qtrt.Callany[voidptr](me)
+	return QQuickItemFromptr(rv)
+}
+func (me *QQuickApplicationWindow) Footer() *QQuickItem {
+	rv := qtrt.Callany[voidptr](me)
+	return QQuickItemFromptr(rv)
+}
+func (me *QQuickApplicationWindow) SetHeader(item *QQuickItem) {
+	qtrt.Callany0(me, item)
+}
+func (me *QQuickApplicationWindow) SetFooter(item *QQuickItem) {
+	qtrt.Callany0(me, item)
+}
+
 type QQuickItem struct {
 	*qtcore.QObject
 }
+type QQuickItemITF interface {
+	QQuickItemPTR() *QQuickItem
+}
+
+func (me *QQuickItem) QQuickItemPTR() *QQuickItem { return me }
 
 func QQuickItemFromptr(ptr voidptr) *QQuickItem {
 	return &QQuickItem{qtcore.QObjectFromptr(ptr)}
@@ -109,4 +146,9 @@ type QQuickText struct {
 }
 
 type QQuickTextEdit struct {
+	*QQuickItem
+}
+
+func QQuickTextEditFromptr(ptr voidptr) *QQuickTextEdit {
+	return &QQuickTextEdit{QQuickItemFromptr(ptr)}
 }
