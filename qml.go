@@ -10,7 +10,7 @@ import (
 	"github.com/qtui/qtrt"
 )
 
-// 想到一种减少go包大小的方式，把方法写成成员变量函数。减少go的符号表
+// 想到一种减少go包大小的方式，把方法写成成员变量函数。减少go符号表
 
 type QQmlContext struct {
 	*qtcore.QObject
@@ -50,15 +50,10 @@ func QQmlEngineFromptr(ptr voidptr) *QQmlEngine {
 	return &QQmlEngine{QJSEngineFromptr(ptr)}
 }
 
-func (me *QQmlEngine) ContextForObject(obj qtcore.QObjectITF) *QQmlContext {
-	rv := qtrt.Callany[voidptr](me, obj)
-	return QQmlContextFromptr(rv)
+func (me *QQmlEngine) ContextForObject(qobj qtcore.QObjectITF) *QQmlContext {
+	return QQmlEngine_ContextForObject(qobj)
 }
-
-func (me *QQmlEngine) contextForObject(qobj qtcore.QObjectITF) *QQmlContext {
-	return QQmlEngine_contextForObject(qobj)
-}
-func QQmlEngine_contextForObject(qobj qtcore.QObjectITF) *QQmlContext {
+func QQmlEngine_ContextForObject(qobj qtcore.QObjectITF) *QQmlContext {
 	rv := qtrt.Callany[voidptr](nil, qobj)
 	return QQmlContextFromptr(rv)
 }
@@ -76,16 +71,23 @@ func NewQQmlApplicationEngine(parent ...qtcore.QObjectITF) *QQmlApplicationEngin
 	return QQmlApplicationEngineFromptr(rv)
 }
 
+// todo 这个经常出现crash？？？
 func (me *QQmlApplicationEngine) Load(file string) {
 	qtrt.Callany0(me, file)
 }
 
-// todo
+// todo 这个方法不是Qt带的
 func (me *QQmlApplicationEngine) RootObject() *qtcore.QObject {
 	symname := "QQmlApplicationEngineRootObject1"
 	fnsym := qtrt.GetQtSymAddr(symname)
 	rv := cgopp.FfiCall[voidptr](fnsym, me.GetCthis())
 	return qtcore.QObjectFromptr(rv)
+}
+
+func (me *QQmlApplicationEngine) RootObjects() *qtcore.QList {
+	rovp := cgopp.Mallocpg(qtclzsz.Get("QList"))
+	qtrt.CallanyRov[voidptr](rovp, me)
+	return qtcore.QListFromptr(rovp)
 }
 
 // //////////
@@ -103,12 +105,22 @@ func QQmlPropertyDtor(me *QQmlProperty) { me.Dtor() }
 // QQmlProperty(obj, QString(name), ctx);
 func NewQQmlProperty(qobj qtcore.QObjectITF, name string, ctx any) *QQmlProperty {
 	rv := qtrt.Callany[voidptr](nil, qobj, name, ctx)
-	return QQmlPropertyFromptr(rv)
+	me := QQmlPropertyFromptr(rv)
+	runtime.SetFinalizer(me, QQmlPropertyDtor)
+	return me
 }
 
 func (me *QQmlProperty) PropertyTypeName() string {
 	rv := qtrt.Callany[voidptr](me)
 	return cgopp.GoString(rv)
+}
+func (me *QQmlProperty) Name() string {
+	rovp := cgopp.Mallocpg(qtclzsz.Get("QString"))
+	qtrt.CallanyRov[voidptr](rovp, me)
+	qstr := qtcore.QStringFromptr(rovp)
+	defer qstr.Dtor()
+
+	return qstr.ToUtf8().ConstData()
 }
 
 func (me *QQmlProperty) Write(valx any) bool {
@@ -125,4 +137,9 @@ func (me *QQmlProperty) Read() *qtcore.QVariant {
 	qvar := qtcore.QVariantFromptr(rovp)
 	runtime.SetFinalizer(qvar, qtcore.QVariantDtor)
 	return qvar
+}
+
+func (me *QQmlProperty) Object() *qtcore.QObject {
+	rv := qtrt.Callany[voidptr](me)
+	return qtcore.QObjectFromptr(rv)
 }
