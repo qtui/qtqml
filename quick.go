@@ -1,7 +1,11 @@
 package qtqml
 
 import (
+	"runtime"
+
 	"github.com/kitech/gopp"
+	"github.com/kitech/gopp/cgopp"
+	"github.com/qtui/qtclzsz"
 	"github.com/qtui/qtcore"
 	"github.com/qtui/qtrt"
 )
@@ -12,11 +16,17 @@ type QQuickApplication struct {
 
 // todo Materail.theme =
 type QQuickApplicationWindow struct {
-	*qtcore.QObject
+	*QQuickItem
 }
 
 func QQuickApplicationWindowFromptr(ptr voidptr) *QQuickApplicationWindow {
-	return &QQuickApplicationWindow{qtcore.QObjectFromptr(ptr)}
+	return &QQuickApplicationWindow{QQuickItemFromptr(ptr)}
+}
+
+// func NewQQuickApplicationWindow(parent ...qtcore.QWindow)
+func NewQQuickApplicationWindow() *QQuickApplicationWindow {
+	rv := qtrt.Callany[voidptr](nil, nil)
+	return QQuickApplicationWindowFromptr(rv)
 }
 
 func (me *QQuickApplicationWindow) ContentItem() *QQuickItem {
@@ -84,14 +94,26 @@ func (me *QQuickItem) ViewportItem() *QQuickItem {
 }
 
 func (me *QQuickItem) Polish() { qtrt.Callany0(me) }
+func (me *QQuickItem) ChildItems() *qtcore.QList {
+	rovp := cgopp.Mallocpg(qtclzsz.Get("QList"))
+	qtrt.CallanyRov[int](rovp, me)
+	lst := qtcore.QListFromptr(rovp)
+	runtime.SetFinalizer(lst, qtcore.QListDtor)
+	return lst
+}
 
 // /////////
 type QQuickWindow struct {
-	*qtcore.QObject
+	*qtcore.QWindow
 }
 
 func QQuickWindowFromptr(ptr voidptr) *QQuickWindow {
-	return &QQuickWindow{qtcore.QObjectFromptr(ptr)}
+	return &QQuickWindow{qtcore.QWindowFromptr(ptr)}
+}
+
+func (me *QQuickWindow) ContentItem() *QQuickItem {
+	rv := qtrt.Callany[voidptr](me)
+	return QQuickItemFromptr(rv)
 }
 
 type QQuickView struct {
@@ -100,6 +122,22 @@ type QQuickView struct {
 
 func QQuickViewFromptr(ptr voidptr) *QQuickView {
 	return &QQuickView{QQuickWindowFromptr(ptr)}
+}
+
+func NewQQuickView(parent ...qtcore.QWindowITF) *QQuickView {
+	rv := qtrt.Callany[voidptr](nil, gopp.FirstofGv(parent))
+	return QQuickViewFromptr(rv)
+}
+
+func (me *QQuickView) SetSource(file string) {
+	uo := qtcore.NewQUrl(file)
+	// log.Println(uo.Url())
+	qtrt.Callany0(me, uo)
+}
+
+func (me *QQuickView) RootObject() *QQuickItem {
+	rv := qtrt.Callany[voidptr](me)
+	return QQuickItemFromptr(rv)
 }
 
 type QQuickFlickable struct {
@@ -143,7 +181,14 @@ func QQuickLoaderFromptr(ptr voidptr) *QQuickLoader {
 }
 
 type QQuickText struct {
+	*QQuickImplicitSizeItem
 }
+
+func QQuickTextFromptr(ptr voidptr) *QQuickText {
+	return &QQuickText{QQuickImplicitSizeItemFromptr(ptr)}
+}
+
+func (me *QQuickText) SetText(text string) { qtrt.Callany0(me, text) }
 
 type QQuickTextEdit struct {
 	*QQuickItem
